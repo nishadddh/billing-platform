@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Bill System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .btn-edit {
+            background-color: #2196F3;
+        }
+        .btn-delete {
+            background-color: #f44336;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .bill-item {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #4CAF50;
+        }
+        .actions {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .hidden {
+            display: none;
+        }
+        .bill-preview {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-top: 20px;
+            background-color: white;
+        }
+        .bill-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .bill-footer {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            text-align: right;
+            font-weight: bold;
+        }
+        .items-table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+        .items-table th, .items-table td {
+            padding: 5px;
+            border: 1px solid #ddd;
+        }
+        .grand-total {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 20px;
+            text-align: right;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #all-bills, #all-bills * {
+                visibility: visible;
+            }
+            #all-bills {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20px;
+                background: white;
+            }
+            button {
+                display: none !important;
+            }
+            @page {
+                size: auto;
+                margin: 10mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Item Bill System</h1>
+        
+        <div id="bill-entry">
+            <h2>Enter Bill Details</h2>
+            <div class="form-group">
+                <label for="bill-no">Bill No:</label>
+                <input type="text" id="bill-no" required>
+            </div>
+            <div class="form-group">
+                <label for="bill-date">Date:</label>
+                <input type="date" id="bill-date" required>
+            </div>
+            
+            <div id="items-container">
+                <div class="bill-item" data-item-id="1">
+                    <h3>Item 1</h3>
+                    <div class="form-group">
+                        <label>Quantity:</label>
+                        <input type="number" id="item-quantity-1" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (SAR):</label>
+                        <input type="number" id="item-amount-1" min="0" step="0.01" required>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="add-item">Add Another Item</button>
+            <button id="save-bill">Save Bill</button>
+            <button id="edit-bill" class="hidden btn-edit">Edit Current Bill</button>
+            <button id="new-bill" class="hidden">Create New Bill</button>
+        </div>
+        
+        <div id="bill-preview" class="bill-preview hidden">
+            <div class="bill-header">
+                <h2 id="preview-bill-no">Bill No: </h2>
+                <p id="preview-bill-date">Date: </p>
+            </div>
+            <table id="preview-items">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Amount (SAR)</th>
+                        <th>Total (SAR)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Items will be added here -->
+                </tbody>
+            </table>
+            <div class="bill-footer">
+                <p>Total Amount: SAR <span id="preview-total">0.00</span></p>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button id="view-bills">View All Bills</button>
+            <button id="export-csv">Export to CSV</button>
+            <button id="print-bill" class="hidden">Print Current Bill</button>
+            <button id="print-all-bills" class="hidden">Print All Bills</button>
+        </div>
+        
+        <div id="all-bills" class="hidden">
+            <h2>All Bills</h2>
+            <table id="bills-table">
+                <thead>
+                    <tr>
+                        <th>Bill No</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Total Amount (SAR)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Bills will be added here -->
+                </tbody>
+            </table>
+            <div class="grand-total">
+                Grand Total: SAR <span id="grand-total">0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let bills = [];
+        let currentBill = {
+            billNo: '',
+            date: '',
+            items: [],
+            total: 0
+        };
+        let itemCount = 1;
+        let currentEditingIndex = -1;
+        
+        // DOM elements
+        const addItemBtn = document.getElementById('add-item');
+        const saveBillBtn = document.getElementById('save-bill');
+        const editBillBtn = document.getElementById('edit-bill');
+        const newBillBtn = document.getElementById('new-bill');
+        const viewBillsBtn = document.getElementById('view-bills');
+        const exportCsvBtn = document.getElementById('export-csv');
+        const printBillBtn = document.getElementById('print-bill');
+        const printAllBillsBtn = document.getElementById('print-all-bills');
+        const billPreview = document.getElementById('bill-preview');
+        const allBills = document.getElementById('all-bills');
+        
+        // Event listeners
+        addItemBtn.addEventListener('click', addItem);
+        saveBillBtn.addEventListener('click', saveBill);
+        editBillBtn.addEventListener('click', editCurrentBill);
+        newBillBtn.addEventListener('click', newBill);
+        viewBillsBtn.addEventListener('click', viewAllBills);
+        exportCsvBtn.addEventListener('click', exportToCSV);
+        printBillBtn.addEventListener('click', printCurrentBill);
+        printAllBillsBtn.addEventListener('click', printAllBillsTable);
+        
+        // Functions
+        function addItem() {
+            itemCount++;
+            const newItem = document.createElement('div');
+            newItem.className = 'bill-item';
+            newItem.setAttribute('data-item-id', itemCount);
+            newItem.innerHTML = `
+                <h3>Item ${itemCount}</h3>
+                <div class="form-group">
+                    <label>Quantity:</label>
+                    <input type="number" id="item-quantity-${itemCount}" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Amount (SAR):</label>
+                    <input type="number" id="item-amount-${itemCount}" min="0" step="0.01" required>
+                </div>
+            `;
+            document.getElementById('items-container').appendChild(newItem);
+        }
+        
+        function saveBill() {
+            // Get bill info
+            const billNo = document.getElementById('bill-no').value;
+            const billDate = document.getElementById('bill-date').value;
+            
+            if (!billNo || !billDate) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            // Collect items
+            const items = [];
+            let total = 0;
+            let hasError = false;
+            
+            document.querySelectorAll('.bill-item').forEach(itemEl => {
+                const id = itemEl.getAttribute('data-item-id');
+                const quantity = parseFloat(document.getElementById(`item-quantity-${id}`).value);
+                const amount = parseFloat(document.getElementById(`item-amount-${id}`).value);
+                
+                if (isNaN(quantity)) {
+                    alert(`Please enter a valid quantity for Item ${id}`);
+                    hasError = true;
+                    return;
+                }
+                
+                if (isNaN(amount)) {
+                    alert(`Please enter a valid amount for Item ${id}`);
+                    hasError = true;
+                    return;
+                }
+                
+                items.push({
+                    name: "Item",
+                    quantity,
+                    amount,
+                    itemTotal: quantity * amount
+                });
+                
+                total += quantity * amount;
+            });
+            
+            if (hasError) return;
+            
+            // Create bill object
+            currentBill = {
+                billNo,
+                date: billDate,
+                items,
+                total
+            };
+            
+            // Add to bills array or update existing
+            if (currentEditingIndex >= 0) {
+                bills[currentEditingIndex] = currentBill;
+                currentEditingIndex = -1;
+            } else {
+                bills.push(currentBill);
+            }
+            
+            // Show preview
+            showBillPreview(currentBill);
+            
+            // Toggle buttons
+            saveBillBtn.classList.add('hidden');
+            editBillBtn.classList.add('hidden');
+            newBillBtn.classList.remove('hidden');
+            printBillBtn.classList.remove('hidden');
+            printAllBillsBtn.classList.remove('hidden');
+        }
+        
+        function editCurrentBill() {
+            // Load current bill into form
+            document.getElementById('bill-no').value = currentBill.billNo;
+            document.getElementById('bill-date').value = currentBill.date;
+            
+            // Clear existing items
+            const itemsContainer = document.getElementById('items-container');
+            while (itemsContainer.children.length > 0) {
+                itemsContainer.removeChild(itemsContainer.lastChild);
+            }
+            
+            // Add items from current bill
+            itemCount = 0;
+            currentBill.items.forEach((item, index) => {
+                itemCount++;
+                const newItem = document.createElement('div');
+                newItem.className = 'bill-item';
+                newItem.setAttribute('data-item-id', itemCount);
+                newItem.innerHTML = `
+                    <h3>Item ${itemCount}</h3>
+                    <div class="form-group">
+                        <label>Quantity:</label>
+                        <input type="number" id="item-quantity-${itemCount}" min="1" required value="${item.quantity}">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (SAR):</label>
+                        <input type="number" id="item-amount-${itemCount}" min="0" step="0.01" required value="${item.amount}">
+                    </div>
+                `;
+                itemsContainer.appendChild(newItem);
+            });
+            
+            // Hide preview and show form
+            billPreview.classList.add('hidden');
+            
+            // Toggle buttons
+            saveBillBtn.classList.remove('hidden');
+            editBillBtn.classList.add('hidden');
+            newBillBtn.classList.add('hidden');
+            printBillBtn.classList.add('hidden');
+        }
+        
+        function showBillPreview(bill) {
+            document.getElementById('preview-bill-no').textContent = `Bill No: ${bill.billNo}`;
+            document.getElementById('preview-bill-date').textContent = `Date: ${bill.date}`;
+            
+            const itemsTable = document.getElementById('preview-items').getElementsByTagName('tbody')[0];
+            itemsTable.innerHTML = '';
+            
+            bill.items.forEach((item, index) => {
+                const row = itemsTable.insertRow();
+                row.insertCell(0).textContent = `${item.name} ${index + 1}`;
+                row.insertCell(1).textContent = item.quantity;
+                row.insertCell(2).textContent = item.amount.toFixed(2);
+                row.insertCell(3).textContent = (item.quantity * item.amount).toFixed(2);
+            });
+            
+            document.getElementById('preview-total').textContent = bill.total.toFixed(2);
+            billPreview.classList.remove('hidden');
+        }
+        
+        function newBill() {
+            // Reset form
+            document.getElementById('bill-no').value = '';
+            document.getElementById('bill-date').value = '';
+            
+            // Keep only the first item
+            const itemsContainer = document.getElementById('items-container');
+            while (itemsContainer.children.length > 1) {
+                itemsContainer.removeChild(itemsContainer.lastChild);
+            }
+            
+            // Reset first item
+            document.getElementById('item-quantity-1').value = '';
+            document.getElementById('item-amount-1').value = '';
+            
+            // Reset counters
+            itemCount = 1;
+            
+            // Hide preview
+            billPreview.classList.add('hidden');
+            
+            // Toggle buttons
+            saveBillBtn.classList.remove('hidden');
+            editBillBtn.classList.add('hidden');
+            newBillBtn.classList.add('hidden');
+            printBillBtn.classList.add('hidden');
+        }
+        
+        function viewAllBills() {
+            const billsTable = document.getElementById('bills-table').getElementsByTagName('tbody')[0];
+            billsTable.innerHTML = '';
+            
+            let grandTotal = 0;
+            
+            // Display all bills
+            bills.forEach((bill, index) => {
+                const row = billsTable.insertRow();
+                row.insertCell(0).textContent = bill.billNo;
+                row.insertCell(1).textContent = bill.date;
+                
+                // Create items table
+                const itemsDiv = document.createElement('div');
+                
+                const itemsTable = document.createElement('table');
+                itemsTable.className = 'items-table';
+                
+                // Create header row
+                const headerRow = itemsTable.createTHead().insertRow();
+                headerRow.insertCell(0).textContent = 'Item';
+                headerRow.insertCell(1).textContent = 'Qty';
+                headerRow.insertCell(2).textContent = 'Amt (SAR)';
+                headerRow.insertCell(3).textContent = 'Total (SAR)';
+                
+                // Add items to table
+                const tbody = itemsTable.createTBody();
+                bill.items.forEach((item, itemIndex) => {
+                    const itemRow = tbody.insertRow();
+                    itemRow.insertCell(0).textContent = `${item.name} ${itemIndex + 1}`;
+                    itemRow.insertCell(1).textContent = item.quantity;
+                    itemRow.insertCell(2).textContent = item.amount.toFixed(2);
+                    itemRow.insertCell(3).textContent = (item.quantity * item.amount).toFixed(2);
+                });
+                
+                // Add total row
+                const totalRow = tbody.insertRow();
+                const totalCell = totalRow.insertCell(0);
+                totalCell.colSpan = 3;
+                totalCell.textContent = 'Total';
+                totalCell.style.fontWeight = 'bold';
+                totalRow.insertCell(1).textContent = bill.total.toFixed(2);
+                totalRow.cells[1].style.fontWeight = 'bold';
+                
+                itemsDiv.appendChild(itemsTable);
+                const detailsCell = row.insertCell(2);
+                detailsCell.appendChild(itemsDiv);
+                
+                row.insertCell(3).textContent = 'SAR' + bill.total.toFixed(2);
+                
+                // Add action buttons
+                const actionCell = row.insertCell(4);
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-edit';
+                editBtn.textContent = 'Edit';
+                editBtn.onclick = () => editSavedBill(index);
+                actionCell.appendChild(editBtn);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-delete';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.onclick = () => deleteBill(index);
+                actionCell.appendChild(deleteBtn);
+                
+                grandTotal += bill.total;
+            });
+            
+            document.getElementById('grand-total').textContent = grandTotal.toFixed(2);
+            allBills.classList.remove('hidden');
+            printAllBillsBtn.classList.remove('hidden');
+        }
+
+        function editSavedBill(index) {
+            currentEditingIndex = index;
+            currentBill = bills[index];
+            editCurrentBill();
+        }
+        
+        function deleteBill(index) {
+            if (confirm('Are you sure you want to delete this bill?')) {
+                bills.splice(index, 1);
+                viewAllBills();
+                if (bills.length === 0) {
+                    allBills.classList.add('hidden');
+                    printAllBillsBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        function exportToCSV() {
+            if (bills.length === 0) {
+                alert('No bills to export');
+                return;
+            }
+            
+            let csvContent = "Bill No,Date,Item,Qty,Amt (SAR),Total (SAR)\n";
+            
+            bills.forEach(bill => {
+                let firstItem = true;
+                bill.items.forEach((item, index) => {
+                    if (firstItem) {
+                        csvContent += `${bill.billNo},${bill.date},Item ${index + 1},${item.quantity},${item.amount.toFixed(2)},${(item.quantity * item.amount).toFixed(2)}\n`;
+                        firstItem = false;
+                    } else {
+                        csvContent += `${bill.billNo},${bill.date},Item ${index + 1},${item.quantity},${item.amount.toFixed(2)},${(item.quantity * item.amount).toFixed(2)}\n`;
+                    }
+                });
+                csvContent += `${bill.billNo},${bill.date},Total,,,${bill.total.toFixed(2)}\n`;
+            });
+            
+            // Add grand total
+            const grandTotal = bills.reduce((sum, bill) => sum + bill.total, 0);
+            csvContent += `,,Grand Total,,,${grandTotal.toFixed(2)}\n`;
+            
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `item_bills_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function printCurrentBill() {
+            // Create print content
+            let printContent = `
+                <div style="font-family: Arial; margin: 20px;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h2>Bill No: ${escapeHtml(currentBill.billNo)}</h2>
+                        <p>Date: ${escapeHtml(currentBill.date)}</p>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                        <thead>
+                            <tr>
+                                <th style="border: 1px solid #000; padding: 8px; text-align: left;">Item</th>
+                                <th style="border: 1px solid #000; padding: 8px; text-align: left;">Quantity</th>
+                                <th style="border: 1px solid #000; padding: 8px; text-align: left;">Amount (SAR)</th>
+                                <th style="border: 1px solid #000; padding: 8px; text-align: left;">Total (SAR)</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+            
+            currentBill.items.forEach((item, index) => {
+                printContent += `
+                            <tr>
+                                <td style="border: 1px solid #000; padding: 8px;">Item ${index + 1}</td>
+                                <td style="border: 1px solid #000; padding: 8px;">${item.quantity}</td>
+                                <td style="border: 1px solid #000; padding: 8px;">${item.amount.toFixed(2)}</td>
+                                <td style="border: 1px solid #000; padding: 8px;">${(item.quantity * item.amount).toFixed(2)}</td>
+                            </tr>`;
+            });
+            
+            printContent += `
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 20px; text-align: right; font-weight: bold;">
+                        <p>Total Amount: SAR ${currentBill.total.toFixed(2)}</p>
+                    </div>
+                </div>`;
+            
+            // Open print window
+            const printWindow = window.open('', '_blank');
+            printWindow.document.open();
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Bill ${escapeHtml(currentBill.billNo)}</title>
+                    <style>
+                        @media print {
+                            @page { size: auto; margin: 5mm; }
+                            body { margin: 0; }
+                        }
+                    </style>
+                </head>
+                <body onload="window.print(); window.close();">
+                    ${printContent}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+        
+        function printAllBillsTable() {
+            if (bills.length === 0) {
+                alert('No bills to print');
+                return;
+            }
+            
+            // First show all bills if hidden
+            allBills.classList.remove('hidden');
+            
+            // Create print content
+            let printContent = `
+                <div style="font-family: Arial; margin: 20px;">
+                    <h1 style="text-align: center;">All Item Bills</h1>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                        <thead>
+                            <tr>
+                                <th style="border: 1px solid #000; padding: 8px; text-align: left;">Bill No</th>
+                                <th style="border: 1px solid #000; padding: 8px; text-align: left;">Date</th>
+                                <th style="border: 1px solid #000; padding: 8px; text-align: left;">Items</th>
+                                <th style="border: 1px solid #000; padding: 8px; text-align: left;">Total (SAR)</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+            
+            let grandTotal = 0;
+            
+            // Add each bill to print content
+            bills.forEach(bill => {
+                printContent += `
+                            <tr>
+                                <td style="border: 1px solid #000; padding: 8px;">${escapeHtml(bill.billNo)}</td>
+                                <td style="border: 1px solid #000; padding: 8px;">${escapeHtml(bill.date)}</td>
+                                <td style="border: 1px solid #000; padding: 8px;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <thead>
+                                            <tr>
+                                                <th style="border: 1px solid #000; padding: 5px;">Item</th>
+                                                <th style="border: 1px solid #000; padding: 5px;">Qty</th>
+                                                <th style="border: 1px solid #000; padding: 5px;">Amt (SAR)</th>
+                                                <th style="border: 1px solid #000; padding: 5px;">Total (SAR)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>`;
+                
+                bill.items.forEach((item, index) => {
+                    printContent += `
+                                            <tr>
+                                                <td style="border: 1px solid #000; padding: 5px;">Item ${index + 1}</td>
+                                                <td style="border: 1px solid #000; padding: 5px;">${item.quantity}</td>
+                                                <td style="border: 1px solid #000; padding: 5px;">${item.amount.toFixed(2)}</td>
+                                                <td style="border: 1px solid #000; padding: 5px;">${(item.quantity * item.amount).toFixed(2)}</td>
+                                            </tr>`;
+                });
+                
+                printContent += `
+                                            <tr>
+                                                <td style="border: 1px solid #000; padding: 5px; font-weight: bold;" colspan="3">Total</td>
+                                                <td style="border: 1px solid #000; padding: 5px; font-weight: bold;">${bill.total.toFixed(2)}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                                <td style="border: 1px solid #000; padding: 8px;">SAR ${bill.total.toFixed(2)}</td>
+                            </tr>`;
+                
+                grandTotal += bill.total;
+            });
+            
+            printContent += `
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 20px; text-align: right; font-weight: bold; font-size: 1.2em;">
+                        Grand Total: SAR ${grandTotal.toFixed(2)}
+                    </div>
+                </div>`;
+            
+            // Open print window
+            const printWindow = window.open('', '_blank');
+            printWindow.document.open();
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>All Item Bills</title>
+                    <style>
+                        @media print {
+                            @page { size: auto; margin: 10mm; }
+                            body { margin: 0; }
+                        }
+                    </style>
+                </head>
+                <body onload="window.print(); window.close();">
+                    ${printContent}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+        
+        // Helper function to escape HTML
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
